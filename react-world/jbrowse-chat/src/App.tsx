@@ -10,7 +10,6 @@ function App() {
 
   // const fs = require('fs').promises;
 
-
   const [workspacePaths, setWorkspacePaths] = useState();
 
   
@@ -21,6 +20,7 @@ function App() {
       console.log("file in react", message);
 
       if (message.command === 'message') {
+        console.log("file in react 2", message);
         setWorkspacePaths(message.data);
         // const blob = new Blob([message.data]);
         // console.log("blob in react", blob)
@@ -30,8 +30,9 @@ function App() {
 
     window.addEventListener('message', handleMessage);
 
+    console.log("workspacePaths",workspacePaths)
     return () => {
-      window.removeEventListener('message', handleMessage);
+      // window.removeEventListener('message', handleMessage);
     };
   }, [workspacePaths]);
 
@@ -43,6 +44,8 @@ function App() {
 
       console.log("clicked in react")
       const CLI = await new window.Aioli(["samtools/1.10"]); // Call the Aioli function
+
+      
       if (workspacePaths) { // Check if workspacePaths is defined
         const blob = new Blob([workspacePaths]);
         console.log(blob)

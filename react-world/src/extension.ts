@@ -7,8 +7,6 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.registerWebviewViewProvider(MyViewProvider.viewType, myViewProvider)
     );
 
-
-
     let webview = vscode.commands.registerCommand('react-world.namasteworld', async () => {
 
     let panel = vscode.window.createWebviewPanel("webview", "React", vscode.ViewColumn.One, {
@@ -47,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         panel.webview.html = getWebviewContent(cssSrc, scriptSrc, panel);
 
-        panel.webview.postMessage({ command: 'message', data: "" });
+        panel.webview.postMessage({ command: 'message', data: "nice" });
 
     } catch (error) {
         console.log("Error reading file or sending message:", error);
