@@ -5,78 +5,49 @@ import sys
 import argparse
 from langchain_openai import ChatOpenAI
 import re
-from pydantic import BaseModel, Field
-
-from langchain_core.prompts import ChatPromptTemplate
-
-
+from rich.console import Console
+from rich.markdown import Markdown
 
 
 # Define your keyword and its specific task here
-KEYWORD = "magicword"
-
-class code(BaseModel):
-        """
-        Schema for code solutions for questions about tskit. 
-        """
-        prefix: str = Field(description="Description of the response")
-        command: str = Field(description="only command as a response to the query")        
-
-def command_tool(input_dict):
-    """
-    """
-    try:
-
-        llm = ChatOpenAI(
-                model="gpt-4o",
-                temperature=0,
-                max_tokens=None,
-                timeout=None,
-                max_retries=2,
-                api_key=input_dict['api']
-            )
-        
-        structured_llm = llm.with_structured_output(code, include_raw=True)
-        chain_raw = (
-            model_prompt() | structured_llm 
-        )
-        return chain_raw
-    except Exception as e:
-        print("command_tool", e)
 
 
+console = Console()
 
 def load_model(input_dict):
     """
     """
     model_name = input_dict['model']
     if model_name == 'openai':
-        llm = command_tool(input_dict)
-        return llm
-    return None
+        llm = ChatOpenAI(
+            model="gpt-4o",
+            temperature=0,
+            max_tokens=None,
+            timeout=None,
+            max_retries=2,
+            api_key=input_dict['api']
+        )
+    return llm
 
 def model_prompt():
-    return ChatPromptTemplate.from_messages(
-        [
-            ("system", "You are a helpful assistant. Help users write biotools commands based on the query. \
-For example: user says - convert samfile to bamfile \
-ASSISTANT: To convert a SAM file to a BAM file, use the following command: \
-`samtools view -S -b input.sam > output.bam`"), ("placeholder", "{messages}"),
-        ]
-    )
-
-
+    return (
+        "system",
+        "You are a helpful assistance. Help user to write biotools commands based the query. \
+            for e.g \
+            USER convert samfile to bamfile \
+            ASSISTANT  to convert samfile to bamfile samtools view -S -b input.sam > output.bam "
+            )
 
 def format_message(message, role):
 
     if role=='user':
-        return [(
+        return (
             'human', message
-        )]
+        )
     else:
-        return [(
+        return (
             'assistant', message
-        )]
+        )
     
 
 def extract_command(text):
@@ -90,7 +61,6 @@ def extract_command(text):
         str: The extracted command, or None if no command is found.
     """
     match = re.search(r"```bash\n(.+?)```", text, re.DOTALL)
-    print(match)
     if match:
         return match.group(1).strip()
     return None
@@ -100,7 +70,9 @@ def confirm_ask():
     """
     Prompt the user to decide whether to run or not.
     """
-    response = input("Do you want to run? (Yes or No): ").strip().lower()
+    ask_text = "\n[bold cyan]Do you want to run?[/bold cyan] [green](Yes or No):[/green] "
+    # console.print(ask_text, end=" ")
+    response = console.input(ask_text).strip().lower()
     if response in ['yes', 'y']:
         print("You chose to run!")
         return True
@@ -111,35 +83,39 @@ def confirm_ask():
         print("Invalid input. Please respond with 'Yes' or 'No'.")
         confirm_ask()  # Re-prompt the user
 
+def print_response(text):
+    """
+    """
+
+    md = Markdown(text)
+    print()
+    console.print(md, style="#fafcfb")
+    print()
+
 def get_response(model, user_input):
-    message = {}
-
-    message['messages'] = format_message(user_input, role='user')
-
+    message = []
+    message.append(model_prompt())
+    message.append(format_message(user_input, role='user'))
     response = model.invoke(message)
-    print(response['parsed'])
-    command = extract_command(response.content)
 
+    print_response(response.content)
+
+    command = extract_command(response.content)
     if command:
         # ask
         if confirm_ask():
-            print(command)
+            print_response(command)
 
-    return response.content
 
 
 def command_provider(input_dict):
     """
     Define the task to be executed when the keyword is typed.
     """
-    try:
+    main_model = load_model(input_dict)
 
-        main_model = load_model(input_dict)
+    get_response(main_model, input_dict['message'])
 
-        res = get_response(main_model, input_dict['message'])
-        print(res)
-    except Exception as e:
-        print("command provider", e)
 
 def args_parser():
 
@@ -175,7 +151,7 @@ def main():
     while True:
         try:
             # Prompt for user input
-            user_input = input("> ").strip()
+            user_input = input("> ")
 
             # Check if the user wants to exit
             if user_input.lower() in ["exit", "quit"]:
