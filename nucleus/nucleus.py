@@ -7,12 +7,36 @@ from langchain_openai import ChatOpenAI
 import re
 from rich.console import Console
 from rich.markdown import Markdown
+import subprocess
+import readline
 
 
-# Define your keyword and its specific task here
 
 
 console = Console()
+
+def completer(text, state):
+    """
+    Tab completion logic for files, directories, and commands.
+    """
+    # Get the current input buffer
+    line = readline.get_line_buffer().split()
+
+    # If completing the first word, look for commands
+    if len(line) == 1:
+        options = [cmd for cmd in os.listdir(os.getcwd()) if cmd.startswith(text)]
+    else:
+        # For subsequent words, complete file and directory names
+        options = [f for f in os.listdir(os.getcwd()) if f.startswith(text)]
+
+    return options[state] if state < len(options) else None
+
+def setup_readline():
+    """
+    Configure readline for tab completion.
+    """
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer(completer)
 
 def load_model(input_dict):
     """
@@ -33,9 +57,13 @@ def model_prompt():
     return (
         "system",
         "You are a helpful assistance. Help user to write biotools commands based the query. \
-            for e.g \
+            if the user types a terminal command then respond with the same command bash block back  \
+            and also if u think the user hasn't provide the file names, ask for that as a followup response. \
+            Here's an example text. \
             USER convert samfile to bamfile \
-            ASSISTANT  to convert samfile to bamfile samtools view -S -b input.sam > output.bam "
+            ASSISTANT  you haven't provided the filenames of input and output \
+            USER input file name is qwe.sam and output file name is qwe.bam \
+            "
             )
 
 def format_message(message, role):
@@ -74,21 +102,23 @@ def confirm_ask():
     # console.print(ask_text, end=" ")
     response = console.input(ask_text).strip().lower()
     if response in ['yes', 'y']:
-        print("You chose to run!")
         return True
     elif response in ['no', 'n']:
-        print("You chose not to run.")
         return False
     else:
         print("Invalid input. Please respond with 'Yes' or 'No'.")
         confirm_ask()  # Re-prompt the user
 
-def print_response(text):
+def print_response(text, type=None):
     """
     """
-
-    md = Markdown(text)
     print()
+    if type=='command':
+        print(text)
+        print()
+        return
+    
+    md = Markdown(text)
     console.print(md, style="#fafcfb")
     print()
 
@@ -104,9 +134,13 @@ def get_response(model, user_input):
     if command:
         # ask
         if confirm_ask():
-            print_response(command)
-
-
+            # print_response(command)
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            if result.returncode==0:
+                print_response(result.stdout, type='command')
+            else:
+                print_response(result.stderr, type='command')
+            
 
 def command_provider(input_dict):
     """
@@ -140,12 +174,13 @@ def args_parser():
 
 def main():
     
+    setup_readline()
+    
     input_vals = args_parser()
     if not input_vals:
         return
-
-    print("=== Custom Shell with Keyword Trigger ===")
-    print("Type commands as usual. Use the keyword 'magicword' to run a specific task.")
+    
+    print("Type commands as usual. ask anything u want")
     print("Type 'exit' or 'quit' to stop the program.\n")
 
     while True:
