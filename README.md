@@ -14,3 +14,9 @@ python nucleus.py
 ```
 
 ## Features
+- [x] Based on query provide commands related to bioinformatic tools.
+- [x] Execute the command.
+- [x] suggest filenames on tab-press while query input.
+- [x] Able to execute normal terminal commands as well as commands sent as query.
+- [ ] local severs spinoff with chat interface.
+- [ ] Visualization of bio-files. spin off jbrowse component.
