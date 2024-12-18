@@ -9,6 +9,11 @@ The Ultimate IDE for Bioinformaticians
 
 You can get started quickly like this:
 
+```
+pip install -r requirements.txt
+
+cd nucleus
+```
 ```python
 python nucleus.py
 ```
