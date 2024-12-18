@@ -14,6 +14,13 @@ pip install -r requirements.txt
 
 cd nucleus
 ```
+
+To set the `OPENAI_API_KEY` environment variable.
+```
+export OPENAI_API_KEY="sk-...."
+```
+
+To run
 ```python
 python nucleus.py
 ```
